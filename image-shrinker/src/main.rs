@@ -8,8 +8,12 @@ struct Cli {
     input_path: PathBuf,
     #[arg(default_value = "shrink", help = "Directory to store processed images")]
     output_dir: PathBuf,
+    #[arg(short, long, help = "The maximum size for shrinking images in MB")]
+    size: f64,
     #[arg(short, long, help = "Recursively process child directories if the path is a directory")]
     recursive: bool,
+    #[arg(short, long, help = "Copy unchanged images to the output directory if they were already small enough")]
+    copy: bool,
 }
 
 fn main() {
