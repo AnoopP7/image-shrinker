@@ -1,6 +1,8 @@
 use clap::Parser;
 use std::{fs, path::PathBuf};
 
+mod image_shrinker;
+
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Cli {
