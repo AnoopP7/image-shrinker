@@ -5,20 +5,31 @@ use turbojpeg::{image};
 
 // size is in bytes
 pub fn shrink_path(path: &PathBuf, size: &usize, copy: &bool, recursive: &bool, out_dir: &PathBuf) -> Result<(), Box <dyn Error>> {
+    // Check for invalid size
+    if *size <= 0 {
+        let err = format!("Invalid size: {}", *size);
+        Err(err)?;
+    }
+
+    // Get list of files in directory
     let dir_items = fs::read_dir(path)?;
 
+    // Iterate through files
     for item in dir_items {
+        // Get file and path
         let item = item?;
         let item_path = item.path();
 
+        // If recursive mode was specified, run recursively on directories
         if *recursive && item_path.is_dir() {
             shrink_path(&item_path, size, copy, recursive, out_dir)?;
-        }
-        
-        let result = shrink_img(&item_path, size, copy, out_dir);
-        if let Err(ref err) = result {
-            eprintln!("{err}");
-            // some errors might warrant exiting
+        } else if !item_path.is_dir() {
+            // Shrink an image
+            let result = shrink_img(&item_path, size, copy, out_dir);
+            if let Err(ref err) = result {
+                eprintln!("{err}");
+                // TODO: Some types of errors might warrant exiting
+            }
         }
     }
 
@@ -27,21 +38,58 @@ pub fn shrink_path(path: &PathBuf, size: &usize, copy: &bool, recursive: &bool, 
 
 // size is in bytes
 pub fn shrink_img(img_path: &PathBuf, size: &usize, copy: &bool, out_dir: &PathBuf) -> Result<(), Box <dyn Error>> {
+    // Check for invalid size
+    if *size <= 0 {
+        let err = format!("Invalid size: {}", *size);
+        Err(err)?;
+    }
+
+    // Check for invalid file
+    let extension = img_path.extension();
+    match extension {
+        // Valid file name
+        Some(ext) => {
+            // Check file format
+            let format = image::ImageFormat::from_extension(ext);
+            match format {
+                // Invalid format
+                None => {
+                    let err = format!("Invalid file type: {}", ext.to_str().expect("Failed to read file extension."));
+                    Err(err)?;
+                },
+                // Valid format
+                Some(img_form) => {
+                    // Check if format can be read
+                    if !img_form.can_read() {
+                        let err = format!("Cannot read file type: {}", ext.to_str().expect("Failed to read file extension."));
+                        Err(err)?;
+                    }
+                }
+            }
+        },
+        // Invalid file name
+        None => {
+            let err = format!("Invalid file name: {}", img_path.display());
+            Err(err)?;
+        }
+    }
+    
     // Load file data
     let img_data = fs::read(img_path)?;
-
-    // Check whether the file is already small enough
     let img_metadata = fs::metadata(img_path)?;
     let img_size = img_metadata.len();
 
     // Create path for new image
-    let new_path = out_dir.join(img_path.file_name().expect("Tried to process a directory in shrink_img"));
+    let mut new_path = out_dir.join(img_path.file_name().expect("Tried to process a directory in shrink_img"));
 
+    // If the specified directory doesn't exist, create it
     if !new_path.parent().unwrap().is_dir() {
         fs::create_dir_all(new_path.parent().unwrap())?;
     }
     
-    if img_size <= (*size).try_into().expect("Encountered invalid size in shrink_img") {
+    // Check whether the file is already small enough
+    if img_size <= (*size).try_into().expect("Failed to compare size in shrink_img") {
+        // If the user specifies to copy unchanged files to the output directory, copy the image
         if *copy {
             fs::write(new_path, img_data)?;
         }
@@ -49,7 +97,8 @@ pub fn shrink_img(img_path: &PathBuf, size: &usize, copy: &bool, out_dir: &PathB
     }
 
     // Convert to image type, checking whether it's an image 
-    let img_data: image::RgbImage = turbojpeg::decompress_image(&img_data)?;
+    // let img_data: image::RgbImage = turbojpeg::decompress_image(&img_data)?;
+    let img_data = load_image(img_path)?;
 
     // Compress image with worse quality iteratively 
     let mut quality = 100;
@@ -59,13 +108,42 @@ pub fn shrink_img(img_path: &PathBuf, size: &usize, copy: &bool, out_dir: &PathB
 
         // If the image is small enough, save it 
         if compressed_img_data.len() <= *size {
-            fs::write(new_path, &compressed_img_data)?;
-            return Ok(());
+            // Set the file extension to JPG 
+            match new_path.set_extension("JPG") {
+                // Failed to set extension, throw an error
+                false => {
+                    let err = format!("Failed to save JPEG to {}", new_path.display());
+                    Err(err)?;
+                },
+                // Succeeded in setting extension, save the image
+                _ => {
+                    fs::write(new_path, &compressed_img_data)?;
+                    return Ok(());
+                }
+            }
         }
 
+        // Reduce the image quality
         quality -= 1;
     }
 
-    // temp, should be an error
-    return Ok(());
+    // Throw an error if we couldn't make the image small enough
+    let err = format!("Failed to shrink {}", img_path.display());
+    Err(err)?
+}
+
+// check whether a given path contains an image
+// fn is_image(path: &PathBuf) -> bool {
+//     match image::open(path) {
+//         Ok(_img) => true,
+//         Err(err) => {
+//             eprintln!("{err}");
+//             false
+//         },
+//     }
+// }
+
+fn load_image(path: &PathBuf) -> image::ImageResult<image::RgbImage> {
+    let img = image::ImageReader::open(path)?.decode()?;
+    Ok(img.into_rgb8())
 }

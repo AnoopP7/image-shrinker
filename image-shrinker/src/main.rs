@@ -33,11 +33,4 @@ fn main() {
         true => image_shrinker::shrink_path(&cli.input_path, &size, &cli.copy, &cli.recursive, &cli.output_dir).unwrap(),
         false => image_shrinker::shrink_img(&cli.input_path, &size, &cli.copy, &cli.output_dir).unwrap(),
     }
-
-    // let paths = fs::read_dir(cli.input_path).unwrap();
-
-    // for path in paths {
-    //     println!("Name: {}", path.as_ref().unwrap().path().display());
-    //     println!("Size: {}", path.as_ref().unwrap().metadata().unwrap().len());
-    // }
 }
