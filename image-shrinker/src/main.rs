@@ -31,6 +31,6 @@ fn main() {
 
     match cli.input_path.is_dir() {
         true => image_shrinker::shrink_path(&cli.input_path, &size, &cli.copy, &cli.recursive, &cli.output_dir, &cli.input_path).unwrap(),
-        false => image_shrinker::shrink_img(&cli.input_path, &size, &cli.copy, &cli.output_dir, &cli.input_path).unwrap(),
+        false => image_shrinker::shrink_img(&cli.input_path, &size, &cli.copy, &cli.output_dir, &cli.input_path.parent().unwrap().to_path_buf()).unwrap(),
     }
 }
