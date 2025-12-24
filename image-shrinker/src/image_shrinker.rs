@@ -1,9 +1,9 @@
-use std::{fs, fs::metadata, path::PathBuf, error::Error};
-use turbojpeg::{image, decompress_image};
+use std::{fs, path::PathBuf, error::Error};
+use turbojpeg::{image};
 
 // pub struct ImageShrinker;
 
-
+// size is in bytes
 pub fn shrink_path(path: &PathBuf, size: &usize, copy: &bool, recursive: &bool, out_dir: &PathBuf) -> Result<(), Box <dyn Error>> {
     let dir_items = fs::read_dir(path)?;
 
@@ -11,14 +11,14 @@ pub fn shrink_path(path: &PathBuf, size: &usize, copy: &bool, recursive: &bool, 
         let item = item?;
         let item_path = item.path();
 
-        if *recursive && path.is_dir() {
-            self::shrink_path(path, size, copy, recursive, out_dir)?;
+        if *recursive && item_path.is_dir() {
+            shrink_path(&item_path, size, copy, recursive, out_dir)?;
         }
         
-        // This likely needs to be changed since item_path is probably wrong
-        let result = self::shrink_img(&item_path, size, copy, path, out_dir);
-        if let Err(ref _err) = result {
-            return result; // should actually check what the error was
+        let result = shrink_img(&item_path, size, copy, out_dir);
+        if let Err(ref err) = result {
+            eprintln!("{err}");
+            // some errors might warrant exiting
         }
     }
 
@@ -26,16 +26,24 @@ pub fn shrink_path(path: &PathBuf, size: &usize, copy: &bool, recursive: &bool, 
 }
 
 // size is in bytes
-pub fn shrink_img(img_path: &PathBuf, size: &usize, copy: &bool, in_dir: &PathBuf, out_dir: &PathBuf) -> Result<(), Box <dyn Error>> {
+pub fn shrink_img(img_path: &PathBuf, size: &usize, copy: &bool, out_dir: &PathBuf) -> Result<(), Box <dyn Error>> {
     // Load file data
-    let img_data = fs::read(in_dir.join(img_path))?;
+    let img_data = fs::read(img_path)?;
 
     // Check whether the file is already small enough
     let img_metadata = fs::metadata(img_path)?;
     let img_size = img_metadata.len();
-    if img_size <= (*size).try_into().unwrap() {
+
+    // Create path for new image
+    let new_path = out_dir.join(img_path.file_name().expect("Tried to process a directory in shrink_img"));
+
+    if !new_path.parent().unwrap().is_dir() {
+        fs::create_dir_all(new_path.parent().unwrap())?;
+    }
+    
+    if img_size <= (*size).try_into().expect("Encountered invalid size in shrink_img") {
         if *copy {
-            fs::write(out_dir.join(img_path), img_data)?;
+            fs::write(new_path, img_data)?;
         }
         return Ok(());
     }
@@ -51,7 +59,7 @@ pub fn shrink_img(img_path: &PathBuf, size: &usize, copy: &bool, in_dir: &PathBu
 
         // If the image is small enough, save it 
         if compressed_img_data.len() <= *size {
-            fs::write(out_dir.join(img_path), &compressed_img_data)?;
+            fs::write(new_path, &compressed_img_data)?;
             return Ok(());
         }
 
