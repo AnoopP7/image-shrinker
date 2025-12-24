@@ -30,7 +30,7 @@ fn main() {
     let size: usize = (cli.size * 1000000.0).trunc() as usize;
 
     match cli.input_path.is_dir() {
-        true => image_shrinker::shrink_path(&cli.input_path, &size, &cli.copy, &cli.recursive, &cli.output_dir).unwrap(),
-        false => image_shrinker::shrink_img(&cli.input_path, &size, &cli.copy, &cli.output_dir).unwrap(),
+        true => image_shrinker::shrink_path(&cli.input_path, &size, &cli.copy, &cli.recursive, &cli.output_dir, &cli.input_path).unwrap(),
+        false => image_shrinker::shrink_img(&cli.input_path, &size, &cli.copy, &cli.output_dir, &cli.input_path).unwrap(),
     }
 }

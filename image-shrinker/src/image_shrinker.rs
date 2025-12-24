@@ -4,7 +4,7 @@ use turbojpeg::{image};
 // pub struct ImageShrinker;
 
 // size is in bytes
-pub fn shrink_path(path: &PathBuf, size: &usize, copy: &bool, recursive: &bool, out_dir: &PathBuf) -> Result<(), Box <dyn Error>> {
+pub fn shrink_path(path: &PathBuf, size: &usize, copy: &bool, recursive: &bool, out_dir: &PathBuf, base_dir: &PathBuf) -> Result<(), Box <dyn Error>> {
     // Check for invalid size
     if *size <= 0 {
         let err = format!("Invalid size: {}", *size);
@@ -22,10 +22,10 @@ pub fn shrink_path(path: &PathBuf, size: &usize, copy: &bool, recursive: &bool, 
 
         // If recursive mode was specified, run recursively on directories
         if *recursive && item_path.is_dir() {
-            shrink_path(&item_path, size, copy, recursive, out_dir)?;
+            shrink_path(&item_path, size, copy, recursive, out_dir, base_dir)?;
         } else if !item_path.is_dir() {
             // Shrink an image
-            let result = shrink_img(&item_path, size, copy, out_dir);
+            let result = shrink_img(&item_path, size, copy, out_dir, base_dir);
             if let Err(ref err) = result {
                 eprintln!("{err}");
                 // TODO: Some types of errors might warrant exiting
@@ -37,7 +37,7 @@ pub fn shrink_path(path: &PathBuf, size: &usize, copy: &bool, recursive: &bool, 
 }
 
 // size is in bytes
-pub fn shrink_img(img_path: &PathBuf, size: &usize, copy: &bool, out_dir: &PathBuf) -> Result<(), Box <dyn Error>> {
+pub fn shrink_img(img_path: &PathBuf, size: &usize, copy: &bool, out_dir: &PathBuf, base_dir: &PathBuf) -> Result<(), Box <dyn Error>> {
     // Check for invalid size
     if *size <= 0 {
         let err = format!("Invalid size: {}", *size);
@@ -80,7 +80,11 @@ pub fn shrink_img(img_path: &PathBuf, size: &usize, copy: &bool, out_dir: &PathB
     let img_size = img_metadata.len();
 
     // Create path for new image
-    let mut new_path = out_dir.join(img_path.file_name().expect("Tried to process a directory in shrink_img"));
+    // Get relative path for recursive case to match directory structure
+    let relative_path = img_path.strip_prefix(base_dir)?.parent().expect("Failed to save to output folder");
+    
+    // Concatenate output directory with relative path and file name
+    let mut new_path = out_dir.join(relative_path.join(img_path.file_name().expect("Tried to process a directory in shrink_img")));
 
     // If the specified directory doesn't exist, create it
     if !new_path.parent().unwrap().is_dir() {
@@ -97,7 +101,6 @@ pub fn shrink_img(img_path: &PathBuf, size: &usize, copy: &bool, out_dir: &PathB
     }
 
     // Convert to image type, checking whether it's an image 
-    // let img_data: image::RgbImage = turbojpeg::decompress_image(&img_data)?;
     let img_data = load_image(img_path)?;
 
     // Compress image with worse quality iteratively 
@@ -132,17 +135,7 @@ pub fn shrink_img(img_path: &PathBuf, size: &usize, copy: &bool, out_dir: &PathB
     Err(err)?
 }
 
-// check whether a given path contains an image
-// fn is_image(path: &PathBuf) -> bool {
-//     match image::open(path) {
-//         Ok(_img) => true,
-//         Err(err) => {
-//             eprintln!("{err}");
-//             false
-//         },
-//     }
-// }
-
+// Load an image using the image crate
 fn load_image(path: &PathBuf) -> image::ImageResult<image::RgbImage> {
     let img = image::ImageReader::open(path)?.decode()?;
     Ok(img.into_rgb8())
