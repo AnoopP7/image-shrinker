@@ -12,25 +12,30 @@ pub fn shrink_path(path: &PathBuf, size: &usize, copy: &bool, recursive: &bool, 
     }
 
     // Get list of files in directory
-    let dir_items = fs::read_dir(path)?;
+    match fs::read_dir(path) {
+        // Directory exists
+        Ok(dir_items) => {
+        // Iterate through files
+            for item in dir_items {
+                // Get file and path
+                let item = item?;
+                let item_path = item.path();
 
-    // Iterate through files
-    for item in dir_items {
-        // Get file and path
-        let item = item?;
-        let item_path = item.path();
-
-        // If recursive mode was specified, run recursively on directories
-        if *recursive && item_path.is_dir() {
-            shrink_path(&item_path, size, copy, recursive, out_dir, base_dir)?;
-        } else if !item_path.is_dir() {
-            // Shrink an image
-            let result = shrink_img(&item_path, size, copy, out_dir, base_dir);
-            if let Err(ref err) = result {
-                eprintln!("{err}");
-                // TODO: Some types of errors might warrant exiting
+                // If recursive mode was specified, run recursively on directories
+                if *recursive && item_path.is_dir() {
+                    shrink_path(&item_path, size, copy, recursive, out_dir, base_dir)?;
+                } else if !item_path.is_dir() {
+                    // Shrink an image
+                    let result = shrink_img(&item_path, size, copy, out_dir, base_dir);
+                    if let Err(ref err) = result {
+                        eprintln!("{err}");
+                        // TODO: Some types of errors might warrant exiting
+                    }
+                }
             }
-        }
+        },
+        // Directory does not exist
+        Err(err) => eprintln!("{err}"),
     }
 
     Ok(())
@@ -42,6 +47,12 @@ pub fn shrink_img(img_path: &PathBuf, size: &usize, copy: &bool, out_dir: &PathB
     if *size <= 0 {
         let err = format!("Invalid size: {}", *size);
         Err(err)?;
+    }
+
+    // Check for invalid file path
+    if !img_path.exists() {
+        eprintln!("File does not exist: {}", img_path.display());
+        return Ok(());
     }
 
     // Check for invalid file
@@ -85,19 +96,23 @@ pub fn shrink_img(img_path: &PathBuf, size: &usize, copy: &bool, out_dir: &PathB
     
     // Concatenate output directory with relative path and file name
     let mut new_path = out_dir.join(relative_path.join(img_path.file_name().expect("Tried to process a directory in shrink_img")));
-
-    // If the specified directory doesn't exist, create it
-    if !new_path.parent().unwrap().is_dir() {
-        fs::create_dir_all(new_path.parent().unwrap())?;
-    }
     
     // Check whether the file is already small enough
     if img_size <= (*size).try_into().expect("Failed to compare size in shrink_img") {
         // If the user specifies to copy unchanged files to the output directory, copy the image
         if *copy {
+            // If the specified directory doesn't exist, create it
+            if !new_path.parent().unwrap().is_dir() {
+                fs::create_dir_all(new_path.parent().unwrap())?;
+            }
             fs::write(new_path, img_data)?;
         }
         return Ok(());
+    }
+
+    // If the specified directory doesn't exist, create it
+    if !new_path.parent().unwrap().is_dir() {
+        fs::create_dir_all(new_path.parent().unwrap())?;
     }
 
     // Convert to image type, checking whether it's an image 
