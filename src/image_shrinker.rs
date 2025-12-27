@@ -6,14 +6,17 @@
 use std::{fs, path::PathBuf, error::Error};
 use turbojpeg::{image};
 
+// shrink_path
 // Applies JPEG compression to each of the images at the given path to get them below the given size and saves to output directory
 // Parameters:
-// path: Path of the directory
+// path: Path to the directory
 // size: Maximum size in bytes for compression
 // copy: If true, copies all images (regardless of whether they were already small enough) to output directory
 // recursive: If true, recursively traverses all nested directories
-// out_dir: Path of the output directory
-// base_dir: Highest level parent directory for traversal (if not recursive, this will be identical to path)
+// out_dir: Path to the output directory
+// base_dir: Highest level parent directory for processing traversal (if not recursive, this will always be identical to path)
+// Return:
+// Result containing nothing if successful and an error if not
 pub fn shrink_path(path: &PathBuf, size: &usize, copy: &bool, recursive: &bool, out_dir: &PathBuf, base_dir: &PathBuf) -> Result<(), Box <dyn Error>> {
     println!("Processing directory: {}", path.display());
 
@@ -54,13 +57,16 @@ pub fn shrink_path(path: &PathBuf, size: &usize, copy: &bool, recursive: &bool, 
     Ok(())
 }
 
+// shrink_img
 // Applies JPEG compression to the image at the given path to get it below the given size and saves to output directory
 // Parameters:
-// img_path: Path of the image
+// img_path: Path to the image
 // size: Maximum size in bytes for compression
 // copy: If true, copies image (regardless of whether they were already small enough) to output directory
-// out_dir: Path of the output directory
-// base_dir: Path of the directory in which the image is contained
+// out_dir: Path to the output directory
+// base_dir: Path to the directory in which the image is contained
+// Return:
+// Result containing nothing if successful and an error if not
 pub fn shrink_img(img_path: &PathBuf, size: &usize, copy: &bool, out_dir: &PathBuf, base_dir: &PathBuf) -> Result<(), Box <dyn Error>> {
     println!("Processing file:      {}", img_path.display());
 
@@ -174,7 +180,12 @@ pub fn shrink_img(img_path: &PathBuf, size: &usize, copy: &bool, out_dir: &PathB
     Err(err)?
 }
 
-// Load an image using the image crate
+// load_image
+// Helper function to load an image as an RgbImage using the image crate
+// Parameters:
+// path: Path to the image
+// Return:
+// ImageResult containing RgbImage if successful
 fn load_image(path: &PathBuf) -> image::ImageResult<image::RgbImage> {
     let img = image::ImageReader::open(path)?.decode()?;
     Ok(img.into_rgb8())
