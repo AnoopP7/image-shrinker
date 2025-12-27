@@ -19,3 +19,7 @@ Run the following for help:
 ```
 .\image-shrinker.exe --help
 ```
+
+## Future Work
+* Implementing multithreading for improved performance with large inputs.
+* Creating GUI for easy usage.
