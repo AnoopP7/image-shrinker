@@ -126,9 +126,11 @@ pub fn shrink_img(img_path: &PathBuf, size: &usize, copy: &bool, out_dir: &PathB
     while quality > 0 {
         // Compress the image
         let compressed_img_data = turbojpeg::compress_image(&img_data, quality, turbojpeg::Subsamp::Sub2x2)?;
+        let new_name = new_path.display().to_string();
+        let new_size = compressed_img_data.len();
 
         // If the image is small enough, save it 
-        if compressed_img_data.len() <= *size {
+        if new_size <= *size {
             // Set the file extension to JPG 
             match new_path.set_extension("JPG") {
                 // Failed to set extension, throw an error
@@ -139,7 +141,7 @@ pub fn shrink_img(img_path: &PathBuf, size: &usize, copy: &bool, out_dir: &PathB
                 // Succeeded in setting extension, save the image
                 _ => {
                     fs::write(new_path, &compressed_img_data)?;
-                    println!("Finished file:        {}", img_path.display());
+                    println!("Finished file:        {} with size {}", new_name, new_size);
                     return Ok(());
                 }
             }
