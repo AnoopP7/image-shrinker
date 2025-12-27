@@ -4,9 +4,9 @@ This project implements functions to facilitate applying JPEG compression to a d
 
 ## Dependencies
 This project makes use of several crates from crates.io:
-* `clap` version 4.5.41
-* `image` version 0.25.9
-* `turbojpeg` version 1.3.3
+* `clap` v4.5.41
+* `image` v0.25.9
+* `turbojpeg` v1.3.3
 
 ## Usage
 After building (`cargo build` or `cargo build --release`, which may require CMake, a C compiler, and NASM), example usage may look like:
