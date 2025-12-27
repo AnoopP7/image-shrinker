@@ -1,3 +1,8 @@
+// main.rs
+// Gets command line arguments and calls image_shrinker functions appropriately
+// to facilitate compressing a directory or individual image
+// Author: Anoop Prasad
+
 use clap::Parser;
 use std::{path::PathBuf};
 
