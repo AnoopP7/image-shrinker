@@ -1,10 +1,10 @@
 use std::{fs, path::PathBuf, error::Error};
 use turbojpeg::{image};
 
-// pub struct ImageShrinker;
-
 // size is in bytes
 pub fn shrink_path(path: &PathBuf, size: &usize, copy: &bool, recursive: &bool, out_dir: &PathBuf, base_dir: &PathBuf) -> Result<(), Box <dyn Error>> {
+    println!("Processing directory: {}", path.display());
+
     // Check for invalid size
     if *size <= 0 {
         let err = format!("Invalid size: {}", *size);
@@ -38,11 +38,14 @@ pub fn shrink_path(path: &PathBuf, size: &usize, copy: &bool, recursive: &bool, 
         Err(err) => eprintln!("{err}"),
     }
 
+    println!("Finished directory:   {}", path.display());
     Ok(())
 }
 
 // size is in bytes
 pub fn shrink_img(img_path: &PathBuf, size: &usize, copy: &bool, out_dir: &PathBuf, base_dir: &PathBuf) -> Result<(), Box <dyn Error>> {
+    println!("Processing file:      {}", img_path.display());
+
     // Check for invalid size
     if *size <= 0 {
         let err = format!("Invalid size: {}", *size);
@@ -136,6 +139,7 @@ pub fn shrink_img(img_path: &PathBuf, size: &usize, copy: &bool, out_dir: &PathB
                 // Succeeded in setting extension, save the image
                 _ => {
                     fs::write(new_path, &compressed_img_data)?;
+                    println!("Finished file:        {}", img_path.display());
                     return Ok(());
                 }
             }
