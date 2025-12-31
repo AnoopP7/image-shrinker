@@ -6,8 +6,6 @@
 use clap::Parser;
 use std::{path::PathBuf};
 
-mod image_shrinker;
-
 // Cli struct for getting command line arguments using clap
 #[derive(Parser)]
 #[command(version, about, long_about = None)]

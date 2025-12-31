@@ -1,4 +1,5 @@
-// image_shrinker.rs
+// lib.rs
+// Image Shrinker
 // Implements functions for applying JPEG compression to images within a directory or individually
 // to get them below a specified size while preserving directory structure
 // Author: Anoop Prasad
