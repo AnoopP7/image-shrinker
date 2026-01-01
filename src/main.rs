@@ -4,7 +4,7 @@
 // Author: Anoop Prasad
 
 use clap::Parser;
-use std::{path::PathBuf};
+use std::path::PathBuf;
 
 // Cli struct for getting command line arguments using clap
 #[derive(Parser)]
