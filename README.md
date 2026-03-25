@@ -22,6 +22,5 @@ Run the following for help:
 ```
 
 ## Future Work
-* Implement multithreading for improved performance with large inputs.
 * Create formal testing.
 * Create GUI for easy usage.

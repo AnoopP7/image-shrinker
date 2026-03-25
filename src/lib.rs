@@ -32,14 +32,11 @@ pub fn shrink_path(path: &PathBuf, size: &usize, copy: &bool, recursive: &bool, 
     match fs::read_dir(path) {
         // Directory exists
         Ok(dir_items) => {
+            // Collect items in directory to a vector
             let items: Vec<PathBuf> = dir_items.filter_map(|result| result.ok()).map(|entry| entry.path()).collect();
 
-            // Iterate through files
+            // Iterate through each path in parallel
             items.par_iter().for_each(|item_path| {
-                // Get file and path
-                // let item = item?;
-                // let item_path = item.path();
-
                 // If recursive mode was specified, run recursively on directories
                 if *recursive && item_path.is_dir() {
                     let result = shrink_path(&item_path, size, copy, recursive, out_dir, base_dir);
