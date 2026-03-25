@@ -6,6 +6,7 @@
 
 use std::{fs, path::PathBuf, error::Error};
 use turbojpeg::{image};
+use rayon::prelude::*;
 
 // shrink_path
 // Applies JPEG compression to each of the images at the given path to get them below the given size and saves to output directory
@@ -31,15 +32,21 @@ pub fn shrink_path(path: &PathBuf, size: &usize, copy: &bool, recursive: &bool, 
     match fs::read_dir(path) {
         // Directory exists
         Ok(dir_items) => {
-        // Iterate through files
-            for item in dir_items {
+            let items: Vec<PathBuf> = dir_items.filter_map(|result| result.ok()).map(|entry| entry.path()).collect();
+
+            // Iterate through files
+            items.par_iter().for_each(|item_path| {
                 // Get file and path
-                let item = item?;
-                let item_path = item.path();
+                // let item = item?;
+                // let item_path = item.path();
 
                 // If recursive mode was specified, run recursively on directories
                 if *recursive && item_path.is_dir() {
-                    shrink_path(&item_path, size, copy, recursive, out_dir, base_dir)?;
+                    let result = shrink_path(&item_path, size, copy, recursive, out_dir, base_dir);
+                    if let Err(ref err) = result {
+                        eprintln!("{err}");
+                        // TODO: Some types of errors might warrant exiting
+                    }
                 } else if !item_path.is_dir() {
                     // Shrink an image
                     let result = shrink_img(&item_path, size, copy, out_dir, base_dir);
@@ -47,8 +54,8 @@ pub fn shrink_path(path: &PathBuf, size: &usize, copy: &bool, recursive: &bool, 
                         eprintln!("{err}");
                         // TODO: Some types of errors might warrant exiting
                     }
-                }
-            }
+                }     
+            });
         },
         // Directory does not exist
         Err(err) => eprintln!("{err}"),

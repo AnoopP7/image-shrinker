@@ -6,6 +6,7 @@ This project implements functions to facilitate applying JPEG compression to a d
 This project makes use of several crates from crates.io:
 * `clap` v4.5.41
 * `image` v0.25.9
+* `rayon` v1.11.0
 * `turbojpeg` v1.3.3
 
 ## Usage
