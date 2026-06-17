@@ -35,7 +35,7 @@ pub fn shrink_path(path: &PathBuf, size: &usize, copy: &bool, recursive: &bool, 
             // Collect items in directory to a vector
             let items: Vec<PathBuf> = dir_items.filter_map(|result| result.ok()).map(|entry| entry.path()).collect();
 
-            // Iterate through each path in parallel
+            // Iterate through each path in the directory in parallel
             items.par_iter().for_each(|item_path| {
                 // If recursive mode was specified, run recursively on directories
                 if *recursive && item_path.is_dir() {
@@ -44,6 +44,7 @@ pub fn shrink_path(path: &PathBuf, size: &usize, copy: &bool, recursive: &bool, 
                         eprintln!("{err}");
                         // TODO: Some types of errors might warrant exiting
                     }
+                // If not a directory, shrink the image
                 } else if !item_path.is_dir() {
                     // Shrink an image
                     let result = shrink_img(&item_path, size, copy, out_dir, base_dir);
